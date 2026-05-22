@@ -1,0 +1,1854 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人简历生成器</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* ==================== CSS变量定义主题颜色 ==================== */
+        :root {
+            /* 蓝色主题（默认） */
+            --primary-color: #4a6fa5;
+            --secondary-color: #3d5a80;
+            --accent-color: #667eea;
+            --border-color: #4a6fa5;
+            --project-title-color: #4a6fa5;
+        }
+ 
+        /* 灰色主题 */
+        body.theme-gray {
+             --primary-color: #6b7280;       
+    	     --secondary-color: #4b5563;      
+             --accent-color: #9ca3af;       
+    	     --border-color: #6b7280;
+   	     --project-title-color: #374151; 
+        }
+
+        /* 莫兰迪浅蓝色主题 */
+        body.theme-lightblue {
+            --primary-color: #7ba3c7;  
+            --secondary-color: #5c85a5;
+            --accent-color: #9cc0db;
+            --border-color: #7ba3c7;
+            --project-title-color: #5c85a5;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 20px;
+        }
+
+        /* 左侧表单样式 */
+        .form-panel {
+            background: #fff;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+
+        .form-title {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .form-group input[type="text"],
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .form-group input[type="text"]:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(74, 111, 165, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        /* 主题切换器样式 */
+        .theme-switcher {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .theme-switcher-title {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+
+        .theme-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .theme-btn {
+            flex: 1;
+            padding: 10px;
+            border: 3px solid transparent;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            color: white;
+        }
+
+        .theme-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .theme-btn.active {
+            border-color: #333;
+            transform: scale(1.05);
+        }
+
+        .theme-btn.blue {
+            background: linear-gradient(135deg, #4a6fa5 0%, #3d5a80 100%);
+        }
+
+        .theme-btn.gray {
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+        }
+
+        .theme-btn.lightblue {
+            background: linear-gradient(135deg, #7ba3c7 0%, #5c85a5 100%);
+        }
+
+        /* 照片上传样式 */
+        .photo-upload-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border: 2px solid #e0e0e0;
+            text-align: center;
+        }
+
+        .photo-upload-title {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+
+        .photo-preview {
+            width: 120px;
+            height: 150px;
+            border-radius: 8px;
+            background: #e0e0e0;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid var(--primary-color);
+            overflow: hidden;
+        }
+
+        .photo-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .photo-placeholder {
+            font-size: 48px;
+            opacity: 0.5;
+        }
+
+        .photo-input-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .photo-input-wrapper input[type="file"] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+
+        .photo-upload-btn {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 10px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+
+        .photo-upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        /* 项目经历表单样式 */
+        .project-form-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 25px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .project-form-title {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-danger {
+            background: #ff6b6b;
+            color: white;
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .btn-danger:hover {
+            background: #ee5a5a;
+        }
+
+        /* 已添加项目列表 */
+        .project-list-form {
+            margin-top: 20px;
+        }
+
+        .project-item-form {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--primary-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .project-item-info h4 {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .project-item-info p {
+            font-size: 12px;
+            color: #666;
+            margin: 0;
+        }
+
+        /* 右侧预览样式 */
+        .preview-panel {
+            background: #f5f5f5;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .preview-title {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* 简历模板样式 - 使用CSS变量 */
+        .resume-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #fff;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(180deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: #fff;
+            padding: 30px 20px;
+        }
+
+        .photo-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .name-display {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #fff;
+            margin-top: 15px;
+        }
+
+        .photo {
+            width: 150px;
+            height: 180px;
+            border-radius: 8px;
+            background: #e0e0e0;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            overflow: hidden;
+        }
+
+        .photo img {
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+
+        .photo-placeholder {
+            font-size: 48px;
+            opacity: 0.5;
+        }
+
+        .job-intent {
+            text-align: center;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            margin-bottom: 25px;
+        }
+
+        .job-intent-title {
+            font-size: 0.85rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        .job-intent-content {
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .section-title svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+
+        .info-list {
+            list-style: none;
+            margin-bottom: 25px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .info-label {
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+
+        .info-value {
+            font-size: 0.9rem;
+            text-align: right;
+        }
+
+        .main-content {
+            flex: 1;
+            min-width: 500px;
+            padding: 35px;
+        }
+
+        .main-section {
+            margin-bottom: 30px;
+        }
+
+        .main-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .main-section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .section-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+        }
+
+        .section-icon svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+
+        .section-badge {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: #fff;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .section-english {
+            margin-left: 10px;
+            color: #999;
+            font-size: 0.9rem;
+            font-weight: normal;
+        }
+
+        /* 教育背景样式 */
+        .education-content {
+            padding-left: 15px;
+        }
+
+        .education-item {
+            margin-bottom: 15px;
+        }
+
+        .education-school {
+            color: var(--project-title-color);
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 5px;
+        }
+
+        .education-period {
+            color: #999;
+            font-size: 0.85rem;
+            margin-bottom: 10px;
+        }
+
+        .education-majors {
+            color: #555;
+            font-size: 0.95rem;
+            line-height: 1.8;
+        }
+
+        .education-label {
+            font-weight: 600;
+            color: #666;
+        }
+
+        /* 个人技能样式 */
+        .skill-list {
+            list-style: none;
+        }
+
+        .skill-item {
+            color: #555;
+            font-size: 0.95rem;
+            line-height: 1.8;
+            padding-left: 15px;
+            border-left: 3px solid var(--border-color);
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+        }
+
+        /* 项目经历样式 */
+        .project-list {
+            list-style: none;
+        }
+
+        .project-item {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .project-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .project-title {
+            color: var(--project-title-color);
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 1rem;
+        }
+
+        .project-period {
+            color: #999;
+            font-size: 0.85rem;
+            margin-bottom: 10px;
+        }
+
+        .project-desc {
+            color: #555;
+            font-size: 0.95rem;
+            line-height: 1.8;
+            padding-left: 15px;
+            border-left: 2px solid #ddd;
+        }
+
+        .self-eval {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            color: #555;
+            font-size: 0.95rem;
+            line-height: 1.8;
+        }
+
+        @media (max-width: 1200px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            .form-panel {
+                position: static;
+                max-height: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .resume-container {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+            }
+            .main-content {
+                min-width: 100%;
+                padding: 20px;
+            }
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 左侧表单区域 -->
+        <div class="form-panel">
+            <h2 class="form-title">
+                <span>📝</span>
+                填写简历信息
+            </h2>
+
+            <!-- 主题切换器 -->
+            <div class="theme-switcher">
+                <div class="theme-switcher-title">
+                    <span>🎨</span>
+                    选择主题颜色
+                </div>
+                <div class="theme-buttons">
+                    <button class="theme-btn blue active" onclick="changeTheme('blue')">蓝色</button>
+                    <button class="theme-btn gray" onclick="changeTheme('gray')">灰色</button>
+                    <button class="theme-btn lightblue" onclick="changeTheme('lightblue')">浅蓝色</button>
+                </div>
+            </div>
+
+            <!-- 照片上传 -->
+            <div class="photo-upload-section">
+                <div class="photo-upload-title">
+                    <span>📷</span>
+                    上传照片
+                </div>
+                <div class="photo-preview" id="photoPreview">
+                    <svg class="photo-placeholder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                </div>
+                <div class="photo-input-wrapper">
+                    <div class="photo-upload-btn">选择照片</div>
+                    <input type="file" id="photoInput" accept="image/*" onchange="handlePhotoUpload(event)">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>姓名</label>
+                <input type="text" id="input-name" placeholder="请输入姓名" oninput="updateResume()">
+            </div>
+
+            <div class="form-group">
+                <label>求职意向</label>
+                <input type="text" id="input-job" placeholder="" oninput="updateResume()">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>性别</label>
+                    <input type="text" id="input-gender" placeholder="" oninput="updateResume()">
+                </div>
+                <div class="form-group">
+                    <label>民族</label>
+                    <input type="text" id="input-ethnic" placeholder="" oninput="updateResume()">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>政治面貌</label>
+                    <input type="text" id="input-political" placeholder="" oninput="updateResume()">
+                </div>
+                <div class="form-group">
+                    <label>学历</label>
+                    <input type="text" id="input-education" placeholder="例如：本科" oninput="updateResume()">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>专业</label>
+                    <input type="text" id="input-major" placeholder="例如：计算机科学" oninput="updateResume()">
+                </div>
+                <div class="form-group">
+                    <label>籍贯</label>
+                    <input type="text" id="input-hometown" placeholder="例如：广东广州" oninput="updateResume()">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>出生年月</label>
+                <input type="text" id="input-birth" placeholder="例如：xx年xx月" oninput="updateResume()">
+            </div>
+
+            <div class="form-group">
+                <label>毕业院校</label>
+                <input type="text" id="input-school" placeholder="例如：XX大学" oninput="updateResume()">
+            </div>
+
+            <div class="form-group">
+                <label>联系电话</label>
+                <input type="text" id="input-phone" placeholder="" oninput="updateResume()">
+            </div>
+
+            <div class="form-group">
+                <label>电子邮箱</label>
+                <input type="text" id="input-email" placeholder="" oninput="updateResume()">
+            </div>
+
+            <!-- 教育背景区域 -->
+            <div class="project-form-section">
+                <h3 class="project-form-title">
+                    <span>🎓</span>
+                    教育背景
+                </h3>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>入学时间</label>
+                        <input type="text" id="input-school-start" placeholder="例如：2023年9月" oninput="updateResume()">
+                    </div>
+                    <div class="form-group">
+                        <label>毕业时间</label>
+                        <input type="text" id="input-school-end" placeholder="例如：2027年6月" oninput="updateResume()">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>主修课程</label>
+                    <textarea id="input-major-courses" placeholder="请输入主修课程，用逗号分隔..." oninput="updateResume()"></textarea>
+                </div>
+            </div>
+
+            <!-- 个人技能添加区域 -->
+            <div class="project-form-section">
+                <h3 class="project-form-title">
+                    <span>⭐</span>
+                    个人技能
+                </h3>
+                
+                <div class="form-group">
+                    <label>技能描述</label>
+                    <textarea id="skill-desc" placeholder="例如：英语四级已过"></textarea>
+                </div>
+
+                <button class="btn btn-primary" onclick="addSkill()">➕ 添加技能</button>
+
+                <!-- 技能编辑表单（默认隐藏） -->
+                <div id="skillEditForm" style="display: none; margin-top: 20px; padding-top: 20px; border-top: 2px dashed #ddd;">
+                    <h4 style="margin-bottom: 15px; color: #333;">✏️ 编辑技能</h4>
+                    <input type="hidden" id="edit-skill-id">
+                    <div class="form-group">
+                        <label>技能描述</label>
+                        <textarea id="edit-skill-desc" placeholder="例如：英语四级已过"></textarea>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-primary" style="flex: 1;" onclick="saveSkill()">💾 保存修改</button>
+                        <button class="btn btn-danger" style="width: auto;" onclick="cancelEditSkill()">❌ 取消</button>
+                    </div>
+                </div>
+
+                <!-- 已添加技能列表 -->
+                <div class="project-list-form" id="skillListForm">
+                    <!-- 动态添加的技能会显示在这里 -->
+                </div>
+            </div>
+
+            <!-- 项目经历添加区域 -->
+            <div class="project-form-section">
+                <h3 class="project-form-title">
+                    <span>💼</span>
+                    添加项目经历
+                </h3>
+                
+                <div class="form-group">
+                    <label>项目名称</label>
+                    <input type="text" id="project-name" placeholder="">
+                </div>
+
+                <div class="form-group">
+                    <label>项目时间</label>
+                    <input type="text" id="project-time" placeholder="例如：2023.10 - 2025.01">
+                </div>
+
+                <div class="form-group">
+                    <label>项目描述</label>
+                    <textarea id="project-desc" placeholder="请输入项目描述..."></textarea>
+                </div>
+
+                <button class="btn btn-primary" onclick="addProject()">➕ 添加项目</button>
+
+                <!-- 项目编辑表单（默认隐藏） -->
+                <div id="projectEditForm" style="display: none; margin-top: 20px; padding-top: 20px; border-top: 2px dashed #ddd;">
+                    <h4 style="margin-bottom: 15px; color: #333;">✏️ 编辑项目</h4>
+                    <input type="hidden" id="edit-project-id">
+                    <div class="form-group">
+                        <label>项目名称</label>
+                        <input type="text" id="edit-project-name" placeholder="">
+                    </div>
+                    <div class="form-group">
+                        <label>项目时间</label>
+                        <input type="text" id="edit-project-time" placeholder="例如：2023.10 - 2025.01">
+                    </div>
+                    <div class="form-group">
+                        <label>项目描述</label>
+                        <textarea id="edit-project-desc" placeholder="请输入项目描述..."></textarea>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-primary" style="flex: 1;" onclick="saveProject()">💾 保存修改</button>
+                        <button class="btn btn-danger" style="width: auto;" onclick="cancelEditProject()">❌ 取消</button>
+                    </div>
+                </div>
+
+                <!-- 已添加项目列表 -->
+                <div class="project-list-form" id="projectListForm">
+                    <!-- 动态添加的项目会显示在这里 -->
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 25px;">
+                <label>自我评价</label>
+                <textarea id="input-eval" placeholder="请输入自我评价..." oninput="updateResume()"></textarea>
+            </div>
+        </div>
+
+        <!-- 右侧预览区域 -->
+        <div class="preview-panel">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 class="preview-title">
+                    <span>👀</span>
+                    实时预览
+                </h2>
+                <div class="save-buttons">
+                    <button class="btn btn-primary" style="margin-right: 10px; width: auto;" onclick="exportAsHTML()">📄 保存为HTML</button>
+                    <button class="btn btn-primary" style="width: auto;" onclick="exportAsPDF()">📑 保存为PDF</button>
+                </div>
+            </div>
+
+            <div class="resume-container" id="resume-preview">
+                <div class="sidebar">
+                    <div class="photo-section">
+                        <div class="photo" id="resumePhoto">
+                            <svg class="photo-placeholder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                        </div>
+                        <div class="name-display" id="preview-name">姓名</div>
+                    </div>
+
+                    <div class="job-intent">
+                        <div class="job-intent-title">求职意向</div>
+                        <div class="job-intent-content" id="preview-job"></div>
+                    </div>
+
+                    <div class="basic-info">
+                        <div class="section-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                            基本信息
+                        </div>
+                        <ul class="info-list">
+                            <li class="info-item">
+                                <span class="info-label">姓名</span>
+                                <span class="info-value" id="preview-name-detail"></span>
+                            </li>
+                            <li class="info-item">
+                                <span class="info-label">性别</span>
+                                <span class="info-value" id="preview-gender"></span>
+                            </li>
+                            <li class="info-item">
+                                <span class="info-label">民族</span>
+                                <span class="info-value" id="preview-ethnic"></span>
+                            </li>
+                            <li class="info-item">
+                                <span class="info-label">政治面貌</span>
+                                <span class="info-value" id="preview-political"></span>
+                            </li>
+                            <li class="info-item">
+                                <span class="info-label">专业</span>
+                                <span class="info-value" id="preview-major"></span>
+                            </li>
+                            <li class="info-item">
+                                <span class="info-label">学历</span>
+                                <span class="info-value" id="preview-education"></span>
+                            </li>
+                            <li class="info-item">
+                                <span class="info-label">籍贯</span>
+                                <span class="info-value" id="preview-hometown"></span>
+                            </li>
+                            <li class="info-item">
+                                <span class="info-label">出生年月</span>
+                                <span class="info-value" id="preview-birth"></span>
+                            </li>
+                            <li class="info-item">
+                                <span class="info-label">毕业院校</span>
+                                <span class="info-value" id="preview-school"></span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="contact-info">
+                        <div class="section-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                            </svg>
+                            联系方式
+                        </div>
+                        <ul class="info-list">
+                            <li class="info-item">
+                                <span class="info-label">联系电话</span>
+                                <span class="info-value" id="preview-phone"></span>
+                            </li>
+                            <li class="info-item">
+                                <span class="info-label">电子邮箱</span>
+                                <span class="info-value" id="preview-email"></span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="main-content">
+                    <!-- 教育背景区域 -->
+                    <div class="main-section education-section">
+                        <div class="main-section-header">
+                            <div class="section-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 20h9"/>
+                                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                                </svg>
+                            </div>
+                            <span class="section-badge">教育背景</span>
+                            <span class="section-english">Education</span>
+                        </div>
+                        <div class="education-content">
+                            <div class="education-item">
+                                <div class="education-school" id="preview-school-name">XX大学</div>
+                                <div class="education-period" id="preview-school-period">2023年9月 - 2027年6月</div>
+                                <div class="education-majors">
+                                    <span class="education-label">主修课程：</span>
+                                    <span id="preview-major-courses"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 项目经历区域 -->
+                    <div class="main-section experience-section" id="projectSection">
+                        <div class="main-section-header">
+                            <div class="section-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                                    <line x1="3" y1="6" x2="21" y2="6"/>
+                                    <path d="M16 10a4 4 0 0 1-8 0"/>
+                                </svg>
+                            </div>
+                            <span class="section-badge">项目经历</span>
+                            <span class="section-english">Experience</span>
+                        </div>
+                        <ol class="project-list" id="projectListPreview">
+                            <li class="project-item">
+                                <div class="project-title">1. </div>
+                                <div class="project-period">(xx年xx月 - xx年xx月)</div>
+                                <div class="project-desc"></div>
+                            </li>
+                            <li class="project-item">
+                                <div class="project-title">2. </div>
+                                <div class="project-period">(xx年xx月 - xx年xx月)</div>
+                                <div class="project-desc"></div>
+                            </li>
+                        </ol>
+                    </div>
+
+                    <!-- 个人技能区域 -->
+                    <div class="main-section skill-section" id="skillSection">
+                        <div class="main-section-header">
+                            <div class="section-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                </svg>
+                            </div>
+                            <span class="section-badge">个人技能</span>
+                            <span class="section-english">Skills</span>
+                        </div>
+                        <ul class="skill-list" id="skillListPreview">
+                            <li class="skill-item"></li>
+                        </ul>
+                    </div>
+
+                    <div class="main-section eval-section">
+                        <div class="main-section-header">
+                            <div class="section-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 20h9"/>
+                                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                                </svg>
+                            </div>
+                            <span class="section-badge">自我评价</span>
+                            <span class="section-english">Evaluate</span>
+                        </div>
+                        <div class="self-eval" id="preview-eval">
+                            
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== 导出功能 ====================
+        
+        /**
+         * 导出简历为HTML文件
+         */
+        function exportAsHTML() {
+            const resumePreview = document.getElementById('resume-preview');
+            
+            // 获取简历的HTML内容
+            const resumeHTML = resumePreview.innerHTML;
+            
+            // 创建完整的HTML文档
+            const fullHTML = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人简历</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .resume-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #fff;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-wrap: wrap;
+        }
+        
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(180deg, #4a6fa5 0%, #3d5a80 100%);
+            color: #fff;
+            padding: 30px 20px;
+        }
+        
+        .photo-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .photo {
+            width: 150px;
+            height: 180px;
+            border-radius: 8px;
+            background: #e0e0e0;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            overflow: hidden;
+        }
+        
+        .photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .photo-placeholder {
+            font-size: 48px;
+            opacity: 0.5;
+        }
+        
+        .job-intent {
+            text-align: center;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            margin-bottom: 25px;
+        }
+        
+        .job-intent-title {
+            font-size: 0.85rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+        
+        .job-intent-content {
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+        
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        
+        .section-title svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+        
+        .info-list {
+            list-style: none;
+            margin-bottom: 25px;
+        }
+        
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .info-label {
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+        
+        .info-value {
+            font-size: 0.9rem;
+            text-align: right;
+        }
+        
+        .main-content {
+            flex: 1;
+            min-width: 500px;
+            padding: 35px;
+        }
+        
+        .main-section {
+            margin-bottom: 30px;
+        }
+        
+        .main-section:last-child {
+            margin-bottom: 0;
+        }
+        
+        .main-section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #4a6fa5;
+        }
+        
+        .section-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #4a6fa5 0%, #3d5a80 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+        }
+        
+        .section-icon svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+        
+        .section-badge {
+            background: linear-gradient(135deg, #4a6fa5 0%, #3d5a80 100%);
+            color: #fff;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+        
+        .section-english {
+            margin-left: 10px;
+            color: #999;
+            font-size: 0.9rem;
+            font-weight: normal;
+        }
+        
+        .education-content {
+            padding-left: 15px;
+        }
+        
+        .education-item {
+            margin-bottom: 15px;
+        }
+        
+        .education-school {
+            color: #4a6fa5;
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 5px;
+        }
+        
+        .education-period {
+            color: #999;
+            font-size: 0.85rem;
+            margin-bottom: 10px;
+        }
+        
+        .education-majors {
+            color: #555;
+            font-size: 0.95rem;
+            line-height: 1.8;
+        }
+        
+        .education-label {
+            font-weight: 600;
+            color: #666;
+        }
+        
+        .project-list {
+            list-style: none;
+        }
+        
+        .project-item {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .project-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        
+        .project-title {
+            color: #4a6fa5;
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 1rem;
+        }
+        
+        .project-period {
+            color: #999;
+            font-size: 0.85rem;
+            margin-bottom: 10px;
+        }
+        
+        .project-desc {
+            color: #555;
+            font-size: 0.95rem;
+            line-height: 1.8;
+            padding-left: 15px;
+            border-left: 2px solid #ddd;
+        }
+        
+        .self-eval {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            color: #555;
+            font-size: 0.95rem;
+            line-height: 1.8;
+        }
+        
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .resume-container {
+                box-shadow: none;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="resume-container">${resumeHTML}</div>
+</body>
+</html>`;
+            
+            // 创建下载链接
+            const blob = new Blob([fullHTML], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '个人简历.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        /**
+         * 导出简历为PDF文件
+         */
+        async function exportAsPDF() {
+            const resumePreview = document.getElementById('resume-preview');
+            
+            try {
+                // 使用html2canvas将简历转换为canvas
+                const canvas = await html2canvas(resumePreview, {
+                    scale: 2, // 提高分辨率
+                    useCORS: true,
+                    logging: false,
+                    backgroundColor: '#ffffff'
+                });
+                
+                // 创建PDF
+                const { jsPDF } = window.jspdf;
+                const imgData = canvas.toDataURL('image/png');
+                
+                // A4尺寸（mm）
+                const pdfWidth = 210;
+                const pdfHeight = 297;
+                
+                // 根据canvas尺寸计算PDF尺寸
+                const imgWidth = canvas.width;
+                const imgHeight = canvas.height;
+                
+                // 计算缩放比例以适应A4纸
+                const scale = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+                const imgWidthMm = (imgWidth * scale);
+                const imgHeightMm = (imgHeight * scale);
+                
+                // 创建PDF文档
+                const pdf = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+                
+                // 计算居中位置，让空白均匀分布在四周
+                const x = (pdfWidth - imgWidthMm) / 2;
+                const y = (pdfHeight - imgHeightMm) / 2;
+                
+                // 添加图片到PDF
+                pdf.addImage(imgData, 'PNG', x, y, imgWidthMm, imgHeightMm);
+                
+                // 下载PDF
+                pdf.save('个人简历.pdf');
+            } catch (error) {
+                console.error('导出PDF失败:', error);
+                alert('导出PDF失败，请重试');
+            }
+        }
+
+        // ==================== 数据管理 ====================
+        // 项目经历数组，用于存储所有项目数据
+        let projects = [];
+        
+        // 技能数组，用于存储所有技能数据
+        let skills = [];
+
+        // ==================== 技能功能 ====================
+        
+        /**
+         * 添加新技能
+         */
+        function addSkill() {
+            const skillInput = document.getElementById('skill-desc');
+            const skillDesc = skillInput.value.trim();
+            
+            if (!skillDesc) {
+                alert('请输入技能描述');
+                return;
+            }
+            
+            const skill = {
+                id: Date.now(),
+                desc: skillDesc
+            };
+            
+            skills.push(skill);
+            skillInput.value = '';
+            
+            updateSkillListForm();
+            updateSkillPreview();
+        }
+        
+        /**
+         * 编辑技能
+         * @param {number} id - 要编辑的技能ID
+         */
+        function editSkill(id) {
+            const skill = skills.find(s => s.id === id);
+            if (!skill) return;
+            
+            // 显示编辑表单
+            document.getElementById('skillEditForm').style.display = 'block';
+            
+            // 填充表单数据
+            document.getElementById('edit-skill-id').value = id;
+            document.getElementById('edit-skill-desc').value = skill.desc;
+        }
+        
+        /**
+         * 保存技能修改
+         */
+        function saveSkill() {
+            const id = parseInt(document.getElementById('edit-skill-id').value);
+            const desc = document.getElementById('edit-skill-desc').value.trim();
+            
+            if (!desc) {
+                alert('请输入技能描述');
+                return;
+            }
+            
+            // 更新数组中的数据
+            const index = skills.findIndex(s => s.id === id);
+            if (index !== -1) {
+                skills[index] = { id, desc };
+            }
+            
+            // 隐藏编辑表单
+            document.getElementById('skillEditForm').style.display = 'none';
+            
+            // 清空编辑表单
+            document.getElementById('edit-skill-id').value = '';
+            document.getElementById('edit-skill-desc').value = '';
+            
+            // 更新界面
+            updateSkillListForm();
+            updateSkillPreview();
+        }
+        
+        /**
+         * 取消编辑技能
+         */
+        function cancelEditSkill() {
+            // 隐藏编辑表单
+            document.getElementById('skillEditForm').style.display = 'none';
+            
+            // 清空编辑表单
+            document.getElementById('edit-skill-id').value = '';
+            document.getElementById('edit-skill-desc').value = '';
+        }
+        
+        /**
+         * 删除技能
+         * @param {number} id - 要删除的技能ID
+         */
+        function removeSkill(id) {
+            skills = skills.filter(s => s.id !== id);
+            updateSkillListForm();
+            updateSkillPreview();
+        }
+        
+        /**
+         * 更新左侧表单中的技能列表显示
+         */
+        function updateSkillListForm() {
+            const container = document.getElementById('skillListForm');
+            
+            if (skills.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            container.innerHTML = skills.map((skill, index) => `
+                <div class="project-item-form">
+                    <div class="project-item-info">
+                        <h4>${index + 1}. ${skill.desc}</h4>
+                    </div>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="btn btn-primary" style="width: auto; padding: 6px 12px; font-size: 12px; margin: 0;" onclick="editSkill(${skill.id})">编辑</button>
+                        <button class="btn btn-danger" onclick="removeSkill(${skill.id})">删除</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        /**
+         * 更新右侧简历预览中的技能显示
+         */
+        function updateSkillPreview() {
+            const container = document.getElementById('skillListPreview');
+            
+            // 如果没有技能，显示示例技能
+            if (skills.length === 0) {
+                container.innerHTML = `
+                    <li class="skill-item">英语四级已过</li>
+                `;
+                return;
+            }
+            
+            // 生成技能列表HTML
+            container.innerHTML = skills.map(skill => `
+                <li class="skill-item">${skill.desc}</li>
+            `).join('');
+        }
+
+        // ==================== 主题切换功能 ====================
+        
+        /**
+         * 切换主题颜色
+         * @param {string} theme - 主题名称：'blue' | 'gray' | 'lightblue'
+         */
+        function changeTheme(theme) {
+            // 移除所有主题类
+            document.body.classList.remove('theme-green', 'theme-purple', 'theme-gray', 'theme-dark', 'theme-orange', 'theme-lightblue');
+            
+            // 添加新主题类（蓝色是默认，不需要添加）
+            if (theme !== 'blue') {
+                document.body.classList.add(`theme-${theme}`);
+            }
+            
+            // 更新按钮状态
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`.theme-btn.${theme}`).classList.add('active');
+        }
+
+        // ==================== 照片上传功能 ====================
+        
+        /**
+         * 处理照片上传
+         * 使用FileReader实现本地预览，不上传服务器
+         * @param {Event} event - 文件选择事件
+         */
+        function handlePhotoUpload(event) {
+            const file = event.target.files[0];
+            
+            // 检查是否选择了文件
+            if (!file) return;
+            
+            // 检查文件类型是否为图片
+            if (!file.type.startsWith('image/')) {
+                alert('请选择图片文件');
+                return;
+            }
+            
+            // 创建FileReader对象
+            const reader = new FileReader();
+            
+            // 文件读取完成后的回调
+            reader.onload = function(e) {
+                const imageData = e.target.result;
+                
+                // 更新左侧预览
+                const photoPreview = document.getElementById('photoPreview');
+                photoPreview.innerHTML = `<img src="${imageData}" alt="个人照片">`;
+                
+                // 更新右侧简历中的照片
+                const resumePhoto = document.getElementById('resumePhoto');
+                resumePhoto.innerHTML = `<img src="${imageData}" alt="个人照片">`;
+            };
+            
+            // 读取文件为Data URL（base64格式）
+            reader.readAsDataURL(file);
+        }
+
+        // ==================== 项目经历功能 ====================
+        
+        /**
+         * 添加新项目
+         * 从表单获取数据，添加到数组，并更新界面
+         */
+        function addProject() {
+            // 获取表单输入值
+            const nameInput = document.getElementById('project-name');
+            const timeInput = document.getElementById('project-time');
+            const descInput = document.getElementById('project-desc');
+            
+            const name = nameInput.value.trim();
+            const time = timeInput.value.trim();
+            const desc = descInput.value.trim();
+            
+            // 验证必填字段
+            if (!name || !time || !desc) {
+                alert('请填写完整的项目信息（项目名称、时间、描述）');
+                return;
+            }
+            
+            // 创建项目对象
+            const project = {
+                id: Date.now(), // 使用时间戳作为唯一ID
+                name: name,
+                time: time,
+                desc: desc
+            };
+            
+            // 添加到数组
+            projects.push(project);
+            
+            // 清空表单
+            nameInput.value = '';
+            timeInput.value = '';
+            descInput.value = '';
+            
+            // 更新界面
+            updateProjectListForm();
+            updateProjectPreview();
+        }
+        
+        /**
+         * 编辑项目
+         * @param {number} id - 要编辑的项目ID
+         */
+        function editProject(id) {
+            const project = projects.find(p => p.id === id);
+            if (!project) return;
+            
+            // 显示编辑表单
+            document.getElementById('projectEditForm').style.display = 'block';
+            
+            // 填充表单数据
+            document.getElementById('edit-project-id').value = id;
+            document.getElementById('edit-project-name').value = project.name;
+            document.getElementById('edit-project-time').value = project.time;
+            document.getElementById('edit-project-desc').value = project.desc;
+        }
+        
+        /**
+         * 保存项目修改
+         */
+        function saveProject() {
+            const id = parseInt(document.getElementById('edit-project-id').value);
+            const name = document.getElementById('edit-project-name').value.trim();
+            const time = document.getElementById('edit-project-time').value.trim();
+            const desc = document.getElementById('edit-project-desc').value.trim();
+            
+            if (!name || !time || !desc) {
+                alert('请填写完整的项目信息');
+                return;
+            }
+            
+            // 更新数组中的数据
+            const index = projects.findIndex(p => p.id === id);
+            if (index !== -1) {
+                projects[index] = { id, name, time, desc };
+            }
+            
+            // 隐藏编辑表单
+            document.getElementById('projectEditForm').style.display = 'none';
+            
+            // 清空编辑表单
+            document.getElementById('edit-project-id').value = '';
+            document.getElementById('edit-project-name').value = '';
+            document.getElementById('edit-project-time').value = '';
+            document.getElementById('edit-project-desc').value = '';
+            
+            // 更新界面
+            updateProjectListForm();
+            updateProjectPreview();
+        }
+        
+        /**
+         * 取消编辑项目
+         */
+        function cancelEditProject() {
+            // 隐藏编辑表单
+            document.getElementById('projectEditForm').style.display = 'none';
+            
+            // 清空编辑表单
+            document.getElementById('edit-project-id').value = '';
+            document.getElementById('edit-project-name').value = '';
+            document.getElementById('edit-project-time').value = '';
+            document.getElementById('edit-project-desc').value = '';
+        }
+        
+        /**
+         * 删除项目
+         * @param {number} id - 要删除的项目ID
+         */
+        function removeProject(id) {
+            // 从数组中移除指定ID的项目
+            projects = projects.filter(p => p.id !== id);
+            
+            // 更新界面
+            updateProjectListForm();
+            updateProjectPreview();
+        }
+        
+        /**
+         * 更新左侧表单中的项目列表显示
+         */
+        function updateProjectListForm() {
+            const container = document.getElementById('projectListForm');
+            
+            if (projects.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            container.innerHTML = projects.map((project, index) => `
+                <div class="project-item-form">
+                    <div class="project-item-info">
+                        <h4>${index + 1}. ${project.name}</h4>
+                        <p>${project.time}</p>
+                        <p style="font-size: 11px; color: #666; margin-top: 5px;">${project.desc}</p>
+                    </div>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="btn btn-primary" style="width: auto; padding: 6px 12px; font-size: 12px; margin: 0;" onclick="editProject(${project.id})">编辑</button>
+                        <button class="btn btn-danger" onclick="removeProject(${project.id})">删除</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        /**
+         * 更新右侧简历预览中的项目经历显示
+         */
+        function updateProjectPreview() {
+            const section = document.getElementById('projectSection');
+            const list = document.getElementById('projectListPreview');
+            
+            // 始终显示项目经历区域
+            section.style.display = 'block';
+            
+            // 如果没有用户添加的项目，显示示例项目
+            if (projects.length === 0) {
+                list.innerHTML = `
+                    <li class="project-item">
+                        <div class="project-title">1. 个人作品集网站</div>
+                        <div class="project-period">(2024年3月 - 2024年6月)</div>
+                        <div class="project-desc">独立设计并开发个人作品集网站，采用响应式设计，展示个人项目成果和技能特长。技术栈：HTML5、CSS3、JavaScript、Bootstrap。</div>
+                    </li>
+                    <li class="project-item">
+                        <div class="project-title">2. 在线商城系统</div>
+                        <div class="project-period">(2024年9月 - 2024年12月)</div>
+                        <div class="project-desc">参与团队开发在线商城系统，负责前端页面开发和用户交互功能。实现了商品展示、购物车、订单管理等核心功能。</div>
+                    </li>
+                `;
+                return;
+            }
+            
+            // 生成项目列表HTML，保持与原模板一致的样式
+            list.innerHTML = projects.map((project, index) => `
+                <li class="project-item">
+                    <div class="project-title">${index + 1}. ${project.name}</div>
+                    <div class="project-period">(${project.time})</div>
+                    <div class="project-desc">${project.desc}</div>
+                </li>
+            `).join('');
+        }
+
+        // ==================== 基本信息功能 ====================
+        
+        /**
+         * 更新简历基本信息
+         * 当用户在表单输入时实时更新右侧预览
+         */
+        function updateResume() {
+            // 获取表单值
+            const name = document.getElementById('input-name').value;
+            const job = document.getElementById('input-job').value;
+            const gender = document.getElementById('input-gender').value;
+            const ethnic = document.getElementById('input-ethnic').value;
+            const political = document.getElementById('input-political').value;
+            const education = document.getElementById('input-education').value;
+            const major = document.getElementById('input-major').value;
+            const hometown = document.getElementById('input-hometown').value;
+            const birth = document.getElementById('input-birth').value;
+            const school = document.getElementById('input-school').value;
+            const phone = document.getElementById('input-phone').value;
+            const email = document.getElementById('input-email').value;
+            const evalText = document.getElementById('input-eval').value;
+            
+            // 获取教育背景表单值
+            const schoolStart = document.getElementById('input-school-start').value;
+            const schoolEnd = document.getElementById('input-school-end').value;
+            const majorCourses = document.getElementById('input-major-courses').value;
+
+            // 更新预览区域（只在有值时才更新，保留默认值）
+            if (name) {
+                document.getElementById('preview-name').textContent = name;
+                document.getElementById('preview-name-detail').textContent = name;
+            }
+            if (job) document.getElementById('preview-job').textContent = job;
+            if (gender) document.getElementById('preview-gender').textContent = gender;
+            if (ethnic) document.getElementById('preview-ethnic').textContent = ethnic;
+            if (political) document.getElementById('preview-political').textContent = political;
+            if (education) document.getElementById('preview-education').textContent = education;
+            if (major) document.getElementById('preview-major').textContent = major;
+            if (hometown) document.getElementById('preview-hometown').textContent = hometown;
+            if (birth) document.getElementById('preview-birth').textContent = birth;
+            if (school) {
+                document.getElementById('preview-school').textContent = school;
+                document.getElementById('preview-school-name').textContent = school;
+            }
+            if (phone) document.getElementById('preview-phone').textContent = phone;
+            if (email) document.getElementById('preview-email').textContent = email;
+            if (evalText) document.getElementById('preview-eval').textContent = evalText;
+            
+            // 更新教育背景预览
+            if (schoolStart || schoolEnd) {
+                const period = (schoolStart ? schoolStart : '') + 
+                              (schoolStart && schoolEnd ? ' - ' : '') + 
+                              (schoolEnd ? schoolEnd : '');
+                document.getElementById('preview-school-period').textContent = period;
+            }
+            if (majorCourses) {
+                document.getElementById('preview-major-courses').textContent = majorCourses;
+            }
+        }
+    </script>
+</body>
+</html>  
